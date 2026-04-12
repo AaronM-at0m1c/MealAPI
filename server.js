@@ -11,6 +11,20 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(express.json());
 
+// Request logging middleware
+const requestLogger = (req, res, next) => {
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] ${req.method} ${req.originalUrl}`);
+  
+    // Log request body for POST and PUT requests
+    if (req.method === 'POST' || req.method === 'PUT') {
+         console.log('Request Body:',
+   JSON.stringify(req.body, null, 2));
+}
+  
+    next();
+};
+
 // JWT session auth middleware
 function requireAuth(req, res, next) {
     // Extract token from Authorization header
@@ -75,6 +89,9 @@ async function testConnection() {
 }
 
 testConnection();
+
+// Implement requestLogger middleware
+app.use(requestLogger);
 
 // AUTHENTICATION ROUTES
 
