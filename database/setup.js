@@ -31,9 +31,9 @@ const User = db.define('User', {
     role: {
         type: DataTypes.STRING,
         allowNull: false,
-        defaultValue: 'employee',
+        defaultValue: 'user',
         validate: {
-            isIn: [['employee', 'manager', 'admin']]
+            isIn: [['user', 'admin']]
   }
     }
 });

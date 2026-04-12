@@ -98,7 +98,7 @@ app.use(requestLogger);
 // POST /api/register - Register new user
 app.post('/api/register', async (req, res) => {
     try {
-        const { name, email, password, role } = req.body;
+        const { username, email, password, role } = req.body;
         
         // Check if user exists
         const existingUser = await User.findOne({ where: { email } });
@@ -265,7 +265,7 @@ app.get('/api/recipes/:id', requireAuth, async (req, res) => {
 // POST /api/recipes - Create new recipe
 app.post('/api/recipes', requireAuth, async (req, res) => {
     try {
-        const { name, ingredientsList, instructionsList, servings = 'active' } = req.body;
+        const { name, ingredientsList, instructionsList, servings } = req.body;
         
         const newRecipe = await Recipe.create({
             name,
@@ -305,7 +305,7 @@ app.put('/api/recipes/:id', requireAuth, async (req, res) => {
 });
 
 // DELETE /api/recipes/:id - Delete recipe
-app.delete('/api/projects/:id', requireAuth, async (req, res) => {
+app.delete('/api/recipes/:id', requireAuth, async (req, res) => {
     try {
         const deletedRowsCount = await Recipe.destroy({
             where: { id: req.params.id }
@@ -371,7 +371,7 @@ app.get('/api/mealplans/:id', requireAuth, async (req, res) => {
 // POST /api/mealplans - Create new mealplan
 app.post('/api/mealplans', requireAuth, async (req, res) => {
     try {
-        const { name, recipes, notes = 'active' } = req.body;
+        const { name, recipes, notes } = req.body;
         
         const newMealPlan = await MealPlan.create({
             name,
@@ -428,6 +428,10 @@ app.delete('/api/mealplans/:id', requireAuth, async (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-    console.log(`Server running on port http://localhost:${PORT}`);
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`Server running on port http://localhost:${PORT}`);
+    });
+}
+
+module.exports = { app, db, User, Recipe, MealPlan };
