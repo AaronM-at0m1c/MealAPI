@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const { app, db, User, Recipe, MealPlan } = require('../server');
 require('dotenv').config();
 
-// Helper function to generate auth token
+// Helper functions
 
 function generateToken(overrides = {}) {
   const payload = {
@@ -16,6 +16,20 @@ function generateToken(overrides = {}) {
   };
   return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
 }
+
+const RECIPE_BODY = {
+  name: 'Spaghetti Bolognese',
+  ingredientsList: 'pasta, beef, tomato sauce',
+  instructionsList: 'Boil pasta. Cook sauce. Combine.',
+  servings: 4
+};
+ 
+const MEALPLAN_BODY = {
+  name: 'Weekly Plan',
+  recipes: 'Tacos, Pasta, Salad',
+  notes: 'Prep on Sunday'
+};
+
 
 // Auth setup
 
