@@ -15,13 +15,13 @@ async function seedDatabase() {
                 username: 'john_cook',
                 email: 'john@mealprep.com',
                 password: hashedPassword,
-                role: 'employee'
+                role: 'user'
             },
             {
                 username: 'sarah_chef',
                 email: 'sarah@mealprep.com',
                 password: hashedPassword,
-                role: 'manager'
+                role: 'user'
             },
             {
                 username: 'mike_admin',
