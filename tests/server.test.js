@@ -30,21 +30,32 @@ const MEALPLAN_BODY = {
   notes: 'Prep on Sunday'
 };
 
-
 // Auth setup
 
-let testUser;
-let authToken;
+let userA, userB, adminUser;
+let tokenA, tokenB, adminToken;
+
 
 beforeAll(async () => {
   await db.sync({ force: true });
 
   const hashed = await bcrypt.hash('password123', 10);
-  testUser = await User.create({
-    username: 'testuser',
-    email: 'test@example.com',
+  userA = await User.create({
+    username: 'userA',
+    email: 'a@example.com',
     password: hashed,
-    role: 'user'
+    role: 'user' });
+  userB = await User.create({
+    username: 'userB',
+    email: 'b@example.com',
+    password: hashed,
+    role: 'user' });
+  adminUser = await User.create({
+    username: 'admin',
+    email: 'admin@example.com',
+    password: hashed,
+    role: 'admin' });
+
   });
 
   authToken = generateToken({
@@ -52,7 +63,6 @@ beforeAll(async () => {
     username: testUser.username,
     email: testUser.email
   });
-});
 
 afterAll(async () => {
   await db.close();
