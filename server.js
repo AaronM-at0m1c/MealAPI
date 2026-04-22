@@ -394,7 +394,7 @@ app.put('/api/mealplans/:id', requireAuth, async (req, res) => {
         
         const [updatedRowsCount] = await MealPlan.update(
             { name, recipes, notes },
-            { where: { id: req.params.id } }
+            { where: { id: req.params.id, userId: req.user.id } }
         );
         
         if (updatedRowsCount === 0) {
@@ -413,7 +413,7 @@ app.put('/api/mealplans/:id', requireAuth, async (req, res) => {
 app.delete('/api/mealplans/:id', requireAuth, async (req, res) => {
     try {
         const deletedRowsCount = await MealPlan.destroy({
-            where: { id: req.params.id }
+            where: { id: req.params.id, userId: req.user.id }
         });
         
         if (deletedRowsCount === 0) {
