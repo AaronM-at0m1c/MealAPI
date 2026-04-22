@@ -98,7 +98,7 @@ app.use(requestLogger);
 // POST /api/register - Register new user
 app.post('/api/register', async (req, res) => {
     try {
-        const { username, email, password, role } = req.body;
+        const { username, email, password } = req.body;
         
         // Check if user exists
         const existingUser = await User.findOne({ where: { email } });
@@ -114,7 +114,7 @@ app.post('/api/register', async (req, res) => {
             username,
             email,
             password: hashedPassword,
-            role
+            role: 'user'
         });
         
         res.status(201).json({
