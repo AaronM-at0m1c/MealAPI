@@ -58,17 +58,28 @@ beforeAll(async () => {
 
   });
 
-  authToken = generateToken({
-    id: testUser.id,
-    username: testUser.username,
-    email: testUser.email
-  });
+   tokenA = generateToken({
+    id: userA.id,
+    username: userA.username,
+    email: userA.email,
+    role: 'user' });
+  tokenB = generateToken({
+    id: userB.id,
+    username: userB.username,
+    email: userB.email,
+    role: 'user' });
+  adminToken = generateToken({
+    id: adminUser.id,
+    username: adminUser.username,
+    email: adminUser.email,
+    role: 'admin' });
+
 
 afterAll(async () => {
   await db.close();
 });
 
-// User tests
+// User and auth tests
 
 describe('Users', () => {
 
@@ -93,7 +104,7 @@ describe('Users', () => {
       .post('/api/register')
       .send({
         username: 'duplicate',
-        email: 'test@example.com',
+        email: 'a@example.com',
         password: 'pass',
         role: 'user'
       });
@@ -101,7 +112,59 @@ describe('Users', () => {
     expect(res.statusCode).toBe(400);
     expect(res.body.error).toMatch(/already exists/i);
   });
+
+  it('returns 400 when email is malformed', async () => {
+    const res = await request(app).post('/api/register').send({
+      username: 'validuser',
+      email: 'not-an-email',
+      password: 'password123'
+    });
+
+  expect(res.statusCode).toBe(400);
 });
+});
+
+describe('POST /api/login', () => {
+  it('returns a JWT token on valid credentials', async () => {
+    const res = await request(app).post('/api/login').send({
+      email: 'a@example.com',
+      password: 'password123'
+    });
+ 
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('token');
+    expect(res.body.user.email).toBe('a@example.com');
+    expect(res.body.user).not.toHaveProperty('password');
+  });
+ 
+  it('returns 401 on wrong password', async () => {
+    const res = await request(app).post('/api/login').send({
+      email: 'a@example.com',
+      password: 'wrongpassword'
+    });
+ 
+    expect(res.statusCode).toBe(401);
+    expect(res.body.error).toMatch(/invalid/i);
+  });
+ 
+  it('returns 401 for an email that does not exist', async () => {
+    const res = await request(app).post('/api/login').send({
+      email: 'ghost@example.com',
+      password: 'password123'
+    });
+ 
+    expect(res.statusCode).toBe(401);
+  });
+});
+ 
+describe('POST /api/logout', () => {
+  it('returns 200 with a success message', async () => {
+    const res = await request(app).post('/api/logout');
+    expect(res.statusCode).toBe(200);
+    expect(res.body.message).toMatch(/logout/i);
+  });
+});
+
 
 // Recipe tests
 
