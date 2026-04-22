@@ -99,6 +99,18 @@ app.use(requestLogger);
 app.post('/api/register', async (req, res) => {
     try {
         const { username, email, password } = req.body;
+
+        // Validate required fields
+        if (!username || typeof username !== 'string' || username.trim().length < 2) {
+            return res.status(400).json({ error: 'Username must be at least 2 characters' });
+        }
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return res.status(400).json({ error: 'A valid email address is required' });
+        }
+        if (!password || password.length < 8) {
+            return res.status(400).json({ error: 'Password must be at least 8 characters' });
+        }
+
         
         // Check if user exists
         const existingUser = await User.findOne({ where: { email } });
