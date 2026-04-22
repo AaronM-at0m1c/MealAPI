@@ -11,6 +11,18 @@ You can find the Postman documentation for this API here:
    ```bash
    npm install
    ```
+4. This project requires an .env file. Below is an example of what you will need:
+```
+# Database Configuration
+DB_NAME=mealprep.db
+DB_TYPE=sqlite
+NODE_ENV=development
+JWT_SECRET=somesecuresecret
+JWT_EXPIRES_IN=24h
+
+# Server Configuration
+PORT=3003
+```
 
 ## API Endpoints Overview
 
