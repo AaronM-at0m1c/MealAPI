@@ -289,7 +289,7 @@ app.put('/api/recipes/:id', requireAuth, async (req, res) => {
         
         const [updatedRowsCount] = await Recipe.update(
             { name, ingredientsList, instructionsList, servings },
-            { where: { id: req.params.id } }
+            { where: { id: req.params.id, userId: req.user.id } }
         );
         
         if (updatedRowsCount === 0) {
@@ -308,7 +308,7 @@ app.put('/api/recipes/:id', requireAuth, async (req, res) => {
 app.delete('/api/recipes/:id', requireAuth, async (req, res) => {
     try {
         const deletedRowsCount = await Recipe.destroy({
-            where: { id: req.params.id }
+            where: { id: req.params.id, userId: req.user.id }
         });
         
         if (deletedRowsCount === 0) {
