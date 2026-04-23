@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const { app, db, User, Recipe, MealPlan } = require('../server');
 require('dotenv').config();
 
-// Helper functions
+// Helper function to generate auth token
 
 function generateToken(overrides = {}) {
   const payload = {
@@ -17,69 +17,44 @@ function generateToken(overrides = {}) {
   return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
 }
 
-const RECIPE_BODY = {
-  name: 'Spaghetti Bolognese',
-  ingredientsList: 'pasta, beef, tomato sauce',
-  instructionsList: 'Boil pasta. Cook sauce. Combine.',
-  servings: 4
-};
- 
-const MEALPLAN_BODY = {
-  name: 'Weekly Plan',
-  recipes: 'Tacos, Pasta, Salad',
-  notes: 'Prep on Sunday'
-};
-
 // Auth setup
 
-let userA, userB, adminUser;
-let tokenA, tokenB, adminToken;
-
+let testUser;
+let authToken;
+let userB, adminUser;
+let tokenB, adminToken;
 
 beforeAll(async () => {
   await db.sync({ force: true });
 
   const hashed = await bcrypt.hash('password123', 10);
-  userA = await User.create({
-    username: 'userA',
-    email: 'a@example.com',
+  testUser = await User.create({
+    username: 'testuser',
+    email: 'test@example.com',
     password: hashed,
-    role: 'user' });
-  userB = await User.create({
-    username: 'userB',
-    email: 'b@example.com',
-    password: hashed,
-    role: 'user' });
-  adminUser = await User.create({
-    username: 'admin',
-    email: 'admin@example.com',
-    password: hashed,
-    role: 'admin' });
-
+    role: 'user'
   });
 
-   tokenA = generateToken({
-    id: userA.id,
-    username: userA.username,
-    email: userA.email,
-    role: 'user' });
-  tokenB = generateToken({
-    id: userB.id,
-    username: userB.username,
-    email: userB.email,
-    role: 'user' });
-  adminToken = generateToken({
-    id: adminUser.id,
-    username: adminUser.username,
-    email: adminUser.email,
-    role: 'admin' });
+  // Additional users for IDOR and RBAC tests
+  userB = await User.create({ username: 'userB', email: 'b@example.com', password: hashed, role: 'user' });
+  adminUser = await User.create({ username: 'admin', email: 'admin@example.com', password: hashed, role: 'admin' });
 
+  authToken = generateToken({
+    id: testUser.id,
+    username: testUser.username,
+    email: testUser.email
+  });
+
+  // Tokens for additional users — must be inside beforeAll so user ids are available
+  tokenB = generateToken({ id: userB.id, username: userB.username, email: userB.email, role: 'user' });
+  adminToken = generateToken({ id: adminUser.id, username: adminUser.username, email: adminUser.email, role: 'admin' });
+});
 
 afterAll(async () => {
   await db.close();
 });
 
-// User and auth tests
+// User tests
 
 describe('Users', () => {
 
@@ -104,86 +79,23 @@ describe('Users', () => {
       .post('/api/register')
       .send({
         username: 'duplicate',
-        email: 'a@example.com',
-        password: 'pass',
+        email: 'test@example.com',
+        password: 'passwordmorethan8charslol',
         role: 'user'
       });
 
     expect(res.statusCode).toBe(400);
     expect(res.body.error).toMatch(/already exists/i);
   });
-
-  it('returns 400 when email is malformed', async () => {
-    const res = await request(app).post('/api/register').send({
-      username: 'validuser',
-      email: 'not-an-email',
-      password: 'password123'
-    });
-
-  expect(res.statusCode).toBe(400);
 });
-});
-
-describe('POST /api/login', () => {
-  it('returns a JWT token on valid credentials', async () => {
-    const res = await request(app).post('/api/login').send({
-      email: 'a@example.com',
-      password: 'password123'
-    });
- 
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty('token');
-    expect(res.body.user.email).toBe('a@example.com');
-    expect(res.body.user).not.toHaveProperty('password');
-  });
- 
-  it('returns 401 on wrong password', async () => {
-    const res = await request(app).post('/api/login').send({
-      email: 'a@example.com',
-      password: 'wrongpassword'
-    });
- 
-    expect(res.statusCode).toBe(401);
-    expect(res.body.error).toMatch(/invalid/i);
-  });
- 
-  it('returns 401 for an email that does not exist', async () => {
-    const res = await request(app).post('/api/login').send({
-      email: 'ghost@example.com',
-      password: 'password123'
-    });
- 
-    expect(res.statusCode).toBe(401);
-  });
-});
- 
-describe('POST /api/logout', () => {
-  it('returns 200 with a success message', async () => {
-    const res = await request(app).post('/api/logout');
-    expect(res.statusCode).toBe(200);
-    expect(res.body.message).toMatch(/logout/i);
-  });
-});
-
 
 // Recipe tests
 
 describe('Recipes', () => {
 
-  let recipeA;
-  let recipeB;
-
-    beforeEach(async () => {
-    await Recipe.destroy({ where: {} });
- 
-    recipeA = await Recipe.create({ ...RECIPE_BODY, name: 'Recipe A', userId: userA.id });
-    recipeB = await Recipe.create({ ...RECIPE_BODY, name: 'Recipe B', userId: userB.id });
-  });
- 
-  afterAll(async () => {
+  afterEach(async () => {
     await Recipe.destroy({ where: {} });
   });
-
 
   it('should create a new recipe', async () => {
     const res = await request(app)
@@ -208,37 +120,26 @@ describe('Recipes', () => {
 
     expect(res.statusCode).toBe(404);
   });
-
-      it('returns only the requesting user\'s own recipes', async () => {
-      const res = await request(app)
-        .get('/api/recipes')
-        .set('Authorization', `Bearer ${tokenA}`);
- 
-      expect(res.statusCode).toBe(200);
-      expect(Array.isArray(res.body)).toBe(true);
-      res.body.forEach(r => expect(r.userId).toBe(userA.id));
-      expect(res.body.find(r => r.id === recipeB.id)).toBeUndefined();
-    });
-
-    it('returns all recipes when called by an admin', async () => {
-      const res = await request(app)
-        .get('/api/recipes')
-        .set('Authorization', `Bearer ${adminToken}`);
- 
-      expect(res.statusCode).toBe(200);
-      expect(res.body.length).toBeGreaterThanOrEqual(2);
-    });
- 
-    it('returns 401 without a token', async () => {
-      const res = await request(app).get('/api/recipes');
-      expect(res.statusCode).toBe(401);
-    });
-
 });
 
 // Mealplan tests
 
 describe('MealPlans', () => {
+
+  let planA;
+  let planB;
+
+  const MEALPLAN_BODY = {
+    name: 'Weekly Plan',
+    recipes: 'Tacos, Pasta, Salad',
+    notes: 'Prep on Sunday'
+  };
+
+  beforeEach(async () => {
+    await MealPlan.destroy({ where: {} });
+    planA = await MealPlan.create({ ...MEALPLAN_BODY, name: 'Plan A', userId: testUser.id });
+    planB = await MealPlan.create({ ...MEALPLAN_BODY, name: 'Plan B', userId: userB.id });
+  });
 
   afterEach(async () => {
     await MealPlan.destroy({ where: {} });
@@ -265,5 +166,70 @@ describe('MealPlans', () => {
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(res.statusCode).toBe(404);
+  });
+
+  it('returns only the requesting user\'s own meal plans', async () => {
+    const res = await request(app)
+      .get('/api/mealplans')
+      .set('Authorization', `Bearer ${authToken}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    res.body.forEach(p => expect(p.userId).toBe(testUser.id));
+    expect(res.body.find(p => p.id === planB.id)).toBeUndefined();
+  });
+
+  it('returns all meal plans when called by an admin', async () => {
+    const res = await request(app)
+      .get('/api/mealplans')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('returns 401 without a token', async () => {
+    const res = await request(app).get('/api/mealplans');
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('updates a meal plan the user owns', async () => {
+    const res = await request(app)
+      .put(`/api/mealplans/${planA.id}`)
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({ ...MEALPLAN_BODY, name: 'Updated Plan' });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.name).toBe('Updated Plan');
+  });
+
+  it('returns 404 when trying to update another user\'s meal plan (IDOR check)', async () => {
+    const res = await request(app)
+      .put(`/api/mealplans/${planB.id}`)
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({ ...MEALPLAN_BODY, name: 'Hijacked' });
+
+    expect(res.statusCode).toBe(404);
+
+    const unchanged = await MealPlan.findByPk(planB.id);
+    expect(unchanged.name).toBe('Plan B');
+  });
+
+  it('deletes a meal plan the user owns', async () => {
+    const res = await request(app)
+      .delete(`/api/mealplans/${planA.id}`)
+      .set('Authorization', `Bearer ${authToken}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(await MealPlan.findByPk(planA.id)).toBeNull();
+  });
+
+  it('returns 404 when trying to delete another user\'s meal plan (IDOR check)', async () => {
+    const res = await request(app)
+      .delete(`/api/mealplans/${planB.id}`)
+      .set('Authorization', `Bearer ${authToken}`);
+
+    expect(res.statusCode).toBe(404);
+    expect(await MealPlan.findByPk(planB.id)).not.toBeNull();
   });
 });

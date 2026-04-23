@@ -339,7 +339,9 @@ app.delete('/api/recipes/:id', requireAuth, async (req, res) => {
 // GET /api/mealplans - Get mealplans
 app.get('/api/mealplans', requireAuth, async (req, res) => {
     try {
+        const whereClause = req.user.role === 'admin' ? {} : { userId: req.user.id };
         const mealplans = await MealPlan.findAll({
+            where: whereClause,
             include: [
                 {
                     model: User,
