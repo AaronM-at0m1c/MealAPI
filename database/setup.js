@@ -1,10 +1,11 @@
 const { Sequelize, DataTypes } = require('sequelize');
+const Database = require('better-sqlite3');
 require('dotenv').config();
 
 // Initialize database connection
 const db = new Sequelize({
     dialect: process.env.DB_TYPE,
-    dialectModule: require('better-sqlite3'),
+    dialectModule: Database,
     storage: `database/${process.env.DB_NAME}` || 'database/mealprep.db',
     logging: false
 });
