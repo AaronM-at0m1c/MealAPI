@@ -170,9 +170,20 @@ describe('POST /api/logout', () => {
 
 describe('Recipes', () => {
 
-  afterEach(async () => {
+  let recipeA;
+  let recipeB;
+
+    beforeEach(async () => {
+    await Recipe.destroy({ where: {} });
+ 
+    recipeA = await Recipe.create({ ...RECIPE_BODY, name: 'Recipe A', userId: userA.id });
+    recipeB = await Recipe.create({ ...RECIPE_BODY, name: 'Recipe B', userId: userB.id });
+  });
+ 
+  afterAll(async () => {
     await Recipe.destroy({ where: {} });
   });
+
 
   it('should create a new recipe', async () => {
     const res = await request(app)
@@ -197,6 +208,32 @@ describe('Recipes', () => {
 
     expect(res.statusCode).toBe(404);
   });
+
+      it('returns only the requesting user\'s own recipes', async () => {
+      const res = await request(app)
+        .get('/api/recipes')
+        .set('Authorization', `Bearer ${tokenA}`);
+ 
+      expect(res.statusCode).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      res.body.forEach(r => expect(r.userId).toBe(userA.id));
+      expect(res.body.find(r => r.id === recipeB.id)).toBeUndefined();
+    });
+
+    it('returns all recipes when called by an admin', async () => {
+      const res = await request(app)
+        .get('/api/recipes')
+        .set('Authorization', `Bearer ${adminToken}`);
+ 
+      expect(res.statusCode).toBe(200);
+      expect(res.body.length).toBeGreaterThanOrEqual(2);
+    });
+ 
+    it('returns 401 without a token', async () => {
+      const res = await request(app).get('/api/recipes');
+      expect(res.statusCode).toBe(401);
+    });
+
 });
 
 // Mealplan tests
