@@ -3,6 +3,8 @@
 This repository contains the code for the MealAPI. Below is everything you need to get started. MealAPI is a REST API solution to the headache of weekly meal prep.
 You can find the Postman documentation for this API [here](https://documenter.getpostman.com/view/44015664/2sBXitDTQc)
 
+This API is live on Render at: https://mealapi-k08l.onrender.com/
+
 ## Getting Started
 
 1. Clone this repository to your local machine
