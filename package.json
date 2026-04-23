@@ -23,13 +23,13 @@
   "homepage": "https://github.com/AaronM-at0m1c/MealAPI#readme",
   "dependencies": {
     "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.9.0",
     "cross-env": "^10.1.0",
     "dotenv": "^17.4.1",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
     "jsonwebtoken": "^9.0.3",
-    "sequelize": "^6.37.8",
-    "sqlite3": "^6.0.1"
+    "sequelize": "^6.37.8"
   },
   "devDependencies": {
     "jest": "^30.3.0",
